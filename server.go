@@ -74,6 +74,7 @@ func makeSetEndpointFunc(store store.KvStore) func(w http.ResponseWriter, r *htt
 }
 
 func main() {
+	// TODO: Make the storage engine configurable
 	//store := store.NewInMemSortedKVStorage()
 	store := store.NewFsAppendOnlyStorage("data.kvstore")
 
