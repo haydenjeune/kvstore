@@ -74,7 +74,8 @@ func makeSetEndpointFunc(store store.KvStore) func(w http.ResponseWriter, r *htt
 }
 
 func main() {
-	store := store.NewInMemSortedKVStorage()
+	//store := store.NewInMemSortedKVStorage()
+	store := store.NewFsAppendOnlyStorage("data.kvstore")
 
 	http.HandleFunc("/get", makeGetEndpointFunc(store))
 	http.HandleFunc("/set", makeSetEndpointFunc(store))
