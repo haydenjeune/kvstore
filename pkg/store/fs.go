@@ -2,7 +2,9 @@ package store
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 )
@@ -17,7 +19,10 @@ func NewFsAppendOnlyStorage(filename string) *FsAppendOnlyStorage {
 
 func (s *FsAppendOnlyStorage) Get(key string) (string, bool, error) {
 	f, err := os.Open(s.filename)
-	if err != nil {
+	if errors.Is(err, fs.ErrNotExist) {
+		// The case where the storage file does not yet exist is defined as the key not existing
+		return "", false, nil
+	} else if err != nil {
 		return "", false, fmt.Errorf("couldn't open data file: %v", err)
 	}
 	defer f.Close()
