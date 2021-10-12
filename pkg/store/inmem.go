@@ -26,6 +26,12 @@ type InMemHashMapKVStorage struct {
 	hashmap map[string]string
 }
 
+func NewInMemHashMapKVStorage() *InMemHashMapKVStorage {
+	return &InMemHashMapKVStorage{
+		hashmap: make(map[string]string),
+	}
+}
+
 func (s *InMemHashMapKVStorage) Get(key string) (string, bool, error) {
 	value, exists := s.hashmap[key]
 	return value, exists, nil

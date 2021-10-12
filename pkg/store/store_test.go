@@ -10,6 +10,12 @@ import (
 // Testing for invariant behaviour that cannot be fully captured by the interface definition.
 
 func Test_AllKvStoreImplementations_CaptureExpectedInvariantBehaviour(t *testing.T) {
+	t.Run("InMemHashMapKVStorage", func(t *testing.T) {
+		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() KvStore {
+			return NewInMemHashMapKVStorage()
+		})
+	})
+	
 	t.Run("InMemSortedKVStorage", func(t *testing.T) {
 		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() KvStore {
 			return NewInMemSortedKVStorage()
