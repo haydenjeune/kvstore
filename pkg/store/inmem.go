@@ -6,10 +6,10 @@ type InMemSortedKVStorage struct {
 	memtable *bst.BinarySearchTree
 }
 
-func NewInMemSortedKVStorage() *InMemSortedKVStorage {
+func NewInMemSortedKVStorage() (*InMemSortedKVStorage, error) {
 	return &InMemSortedKVStorage{
 		memtable: &bst.BinarySearchTree{},
-	}
+	}, nil
 }
 
 func (s *InMemSortedKVStorage) Get(key string) (string, bool, error) {
@@ -26,10 +26,10 @@ type InMemHashMapKVStorage struct {
 	hashmap map[string]string
 }
 
-func NewInMemHashMapKVStorage() *InMemHashMapKVStorage {
+func NewInMemHashMapKVStorage() (*InMemHashMapKVStorage, error) {
 	return &InMemHashMapKVStorage{
 		hashmap: make(map[string]string),
-	}
+	}, nil
 }
 
 func (s *InMemHashMapKVStorage) Get(key string) (string, bool, error) {

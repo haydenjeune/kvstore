@@ -75,8 +75,13 @@ func makeSetEndpointFunc(store store.KvStore) func(w http.ResponseWriter, r *htt
 
 func main() {
 	// TODO: Make the storage engine configurable
-	//store := store.NewInMemSortedKVStorage()
-	store := store.NewFsAppendOnlyStorage("data.kvstore")
+	//store, err := store.NewInMemHashMapKVStorage()
+	//store, err := store.NewFsAppendOnlyStorage("data.kvstore")
+	store, err := store.NewHashIndexedFsAppendOnlyStorage("data.kvstore")
+	//store, err := store.NewInMemSortedKVStorage()
+	if err != nil {
+		log.Fatalf("Failed to instantiate storage: %v", err)
+	}
 
 	http.HandleFunc("/get", makeGetEndpointFunc(store))
 	http.HandleFunc("/set", makeSetEndpointFunc(store))

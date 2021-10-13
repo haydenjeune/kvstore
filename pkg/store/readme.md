@@ -52,6 +52,22 @@ Solves some of the problems of `InMemHashMapStorage` in that the data doesn't ne
 
 One way to speed up reads would be to use some kind of in memory index to map between key in memory, and value on disk.
 
+## `HashIndexedFsAppendOnlyStorage`
+
+This storage engine extends FsAppendOnlyStorage to maintain an index that maps key values to a byte offset into the storage file. This allows much faster reads, at the cost of storing all key data in memory. Some extra complexity is also introduced in that the index needs to be rebuilt on startup if the file already exists.
+
+### Advantages
+
+- Fast writes (independent of the number of total records)
+- Append only write model allows multiple concurrent reading threads easily (but still only one write)
+- Data is persisted even if the process exits
+- Faster reads than `FsAppendOnlyStorage` (independent of the number of total records)
+
+### Disadvantages
+
+- All keys must fit in memory
+- Unnecessary storage (superseded values never get deleted/overwritten)
+
 ## `InMemSortedKVStorage`
 
 Another way of storing key-value pairs in an easily accessible way in-memory is to use some kind of search tree to store the data. The simplest implementation of this (as I have done) uses a binary search tree, where the node position is determined by the key. We build the tree as new keys are added. With the BST implementation, if we add keys in sequential order, we will encounter worst case insert and search times of O(n). If a more advanced tree structure is used, like Red/Black or AVL Trees, insert and search times can be reduced to log(n).
