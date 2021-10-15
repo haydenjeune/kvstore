@@ -20,12 +20,6 @@ func Test_AllKvStoreImplementations_CaptureExpectedInvariantBehaviour(t *testing
 			return NewInMemHashMapKVStorage()
 		})
 	})
-	
-	t.Run("InMemSortedKVStorage", func(t *testing.T) {
-		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() (KvStore, error) {
-			return NewInMemSortedKVStorage()
-		})
-	})
 
 	t.Run("FsAppendOnlyStorage", func(t *testing.T) {
 		filename := makeTestFilePath("kvstore_test_FsAppendOnlyStorage")
@@ -40,6 +34,18 @@ func Test_AllKvStoreImplementations_CaptureExpectedInvariantBehaviour(t *testing
 		defer os.Remove(filename)
 		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() (KvStore, error) {
 			return NewHashIndexedFsAppendOnlyStorage(filename)
+		})
+	})
+	
+	t.Run("InMemSortedKVStorage", func(t *testing.T) {
+		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() (KvStore, error) {
+			return NewInMemSortedKVStorage()
+		})
+	})
+	
+	t.Run("SortedFileKVStorage", func(t *testing.T) {
+		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() (KvStore, error) {
+			return NewSortedFileKvStorage()
 		})
 	})
 }
