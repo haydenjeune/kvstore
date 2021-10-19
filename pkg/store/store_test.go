@@ -5,6 +5,9 @@ import (
 	"path"
 	"testing"
 	"time"
+
+	"github.com/spf13/afero"
+	"github.com/haydenjeune/kvstore/pkg/store/sortedfile"
 )
 
 // Testing for invariant behaviour that cannot be fully captured by the interface definition.
@@ -45,7 +48,7 @@ func Test_AllKvStoreImplementations_CaptureExpectedInvariantBehaviour(t *testing
 	
 	t.Run("SortedFileKVStorage", func(t *testing.T) {
 		test_KvStoreImplementation_CapturesExpectedInvariantBehaviour(t, func() (KvStore, error) {
-			return NewSortedFileKvStorage()
+			return sortedfile.NewSortedFileKvStorage(afero.NewMemMapFs())
 		})
 	})
 }

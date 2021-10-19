@@ -57,7 +57,7 @@ func Test_InOrderTraversal_ReturnsCorrectNumberOfElements(t *testing.T) {
 	iter := NewInOrderTraversalIterator(&tree)
 	counter := 0
 
-	for iter.Next() != nil {
+	for iter.Next() {
 		counter += 1
 	}
 
@@ -78,7 +78,8 @@ func Test_InOrderTraversal_ReturnsSortedList(t *testing.T) {
 	iter := NewInOrderTraversalIterator(&tree)
 
 	for i, key := range []string{"3", "4", "5", "6", "7", "8"} {
-		node := iter.Next()
+		iter.Next()
+		node := iter.Value()
 		if node.key != key {
 			t.Fatalf("Bad key ordering and %dth element. Got '%s', expected '%s'", i, node.key, key)
 		}

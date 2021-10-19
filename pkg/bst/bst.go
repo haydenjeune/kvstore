@@ -39,6 +39,14 @@ type BinaryNode struct {
 	right *BinaryNode
 }
 
+func (n *BinaryNode) Key() string {
+	return n.key
+}
+
+func (n *BinaryNode) Value() string {
+	return n.value
+}
+
 func (n *BinaryNode) Insert(key string, value string) {
 	if key < n.key {
 		if n.left != nil {
@@ -70,7 +78,8 @@ func (n *BinaryNode) Search(key string) (string, bool) {
 }
 
 type InOrderTraversalIterator struct {
-	q []*BinaryNode
+	q    []*BinaryNode
+	curr *BinaryNode
 }
 
 func NewInOrderTraversalIterator(tree *BinarySearchTree) *InOrderTraversalIterator {
@@ -93,13 +102,15 @@ func (i *InOrderTraversalIterator) addNode(root *BinaryNode) {
 	}
 }
 
-func (i *InOrderTraversalIterator) Next() *BinaryNode {
+func (i *InOrderTraversalIterator) Value() *BinaryNode {
+	return i.curr
+}
+
+func (i *InOrderTraversalIterator) Next() bool {
 	if len(i.q) == 0 {
-		return nil
+		return false
 	}
-
-	next := i.q[0]
+	i.curr = i.q[0]
 	i.q = i.q[1:]
-
-	return next
+	return true
 }
