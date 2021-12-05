@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/haydenjeune/kvstore/pkg/bst"
@@ -16,6 +15,26 @@ type SortedFile struct {
 	index    []KeyOffset
 	filename string
 	fs       afero.Fs
+}
+
+type KeyOffset struct {
+	Key    string
+	Offset int64
+}
+
+const RECORDS_PER_INDEX_ENTRY uint = 10
+const MAX_RECORDS_PER_FILE uint = 100
+
+func NewSortedFile(filename string, fs afero.Fs) (*SortedFile, error) {
+	index, err := newSparseIndexFromFile(filename, fs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build index from file '%s': %v", filename, err)
+	}
+	return &SortedFile{
+		index:    index,
+		filename: filename,
+		fs:       fs,
+	}, nil
 }
 
 func (s *SortedFile) Get(key string) (string, bool, error) {
@@ -60,58 +79,6 @@ func (s *SortedFile) Get(key string) (string, bool, error) {
 		return "", false, fmt.Errorf("failed to scan line at offset %d in file '%s': %v", offset, s.filename, scanner.Err())
 	}
 	return "", false, nil
-}
-
-// TODO: move tests in keyoffset pkg
-func getInterval(index []KeyOffset, key string) (*KeyOffset, *KeyOffset) {
-	if len(index) == 0 {
-		return nil, nil
-	}
-
-	if len(index) == 1 {
-		if key < index[0].Key {
-			return nil, &index[0]
-		} else {
-			return &index[0], nil
-		}
-	}
-
-	mid := len(index) / 2
-
-	var l, r *KeyOffset
-	if key < index[mid].Key {
-		l, r = getInterval(index[:mid], key)
-		if r == nil {
-			r = &index[mid]
-		}
-	} else {
-		l, r = getInterval(index[mid:], key)
-		if l == nil && mid > 0 {
-			l = &index[mid-1]
-		}
-	}
-
-	return l, r
-}
-
-type KeyOffset struct {
-	Key    string
-	Offset int64
-}
-
-const RECORDS_PER_INDEX_ENTRY uint = 10
-const MAX_RECORDS_PER_FILE uint = 100
-
-func NewSortedFile(filename string, fs afero.Fs) (*SortedFile, error) {
-	index, err := newSparseIndexFromFile(filename, fs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build index from file '%s': %v", filename, err)
-	}
-	return &SortedFile{
-		index:    index,
-		filename: filename,
-		fs:       fs,
-	}, nil
 }
 
 func newSparseIndexFromFile(filename string, fs afero.Fs) ([]KeyOffset, error) {
@@ -167,73 +134,33 @@ func writeBstToSortedFile(t *bst.BinarySearchTree, filename string, fs afero.Fs)
 	return nil
 }
 
-type SortedFileKvStorage struct {
-	fs       afero.Fs
-	memtable bst.BinarySearchTree
-	files    []*SortedFile
-}
-
-func NewSortedFileKvStorage(fs afero.Fs) (*SortedFileKvStorage, error) {
-	return &SortedFileKvStorage{fs: fs}, nil
-}
-
-func (s *SortedFileKvStorage) Get(key string) (string, bool, error) {
-	value, exists := s.memtable.Search(key)
-	if exists {
-		return value, true, nil
+func getInterval(index []KeyOffset, key string) (*KeyOffset, *KeyOffset) {
+	if len(index) == 0 {
+		return nil, nil
 	}
 
-	for i := len(s.files) - 1; i >= 0; i-- {
-		value, exists, err := s.files[i].Get(key)
-		if err != nil {
-			return "", false, fmt.Errorf("failed to get key '%s': %v", key, err)
-		} else if exists {
-			return value, true, nil
+	if len(index) == 1 {
+		if key < index[0].Key {
+			return nil, &index[0]
+		} else {
+			return &index[0], nil
 		}
 	}
 
-	return "", false, nil
-}
+	mid := len(index) / 2
 
-func (s *SortedFileKvStorage) Set(key string, value string) error {
-	s.memtable.Insert(key, value)
-
-	if s.memtable.Size() >= MAX_RECORDS_PER_FILE {
-		filename, err := s.nextFileName()
-		if err != nil {
-			return fmt.Errorf("failed to infer next filename in series: %v", err)
+	var l, r *KeyOffset
+	if key < index[mid].Key {
+		l, r = getInterval(index[:mid], key)
+		if r == nil {
+			r = &index[mid]
 		}
-		err = writeBstToSortedFile(&s.memtable, filename, s.fs)
-		if err != nil {
-			return fmt.Errorf("failed to write memtable to file: %v", err)
-		}
-		file, err := NewSortedFile(filename, s.fs)
-		if err != nil {
-			return fmt.Errorf("failed to read new sorted file: %v", err)
-		}
-		s.files = append(s.files, file)
-		s.memtable = bst.BinarySearchTree{}
-	}
-
-	return nil
-}
-
-func (s *SortedFileKvStorage) nextFileName() (string, error) {
-	files, err := afero.ReadDir(s.fs, ".")
-	if err != nil {
-		return "", fmt.Errorf("failed to list files: %v", err)
-	}
-
-	// all filenames are just integers, starting at 0
-	var last int = -1
-	for _, f := range files {
-		if !f.IsDir() {
-			fileNumber, err := strconv.Atoi(f.Name())
-			if err == nil {
-				last = fileNumber
-			}
+	} else {
+		l, r = getInterval(index[mid:], key)
+		if l == nil && mid > 0 {
+			l = &index[mid-1]
 		}
 	}
 
-	return strconv.Itoa(last + 1), nil
+	return l, r
 }

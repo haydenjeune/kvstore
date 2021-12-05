@@ -1,8 +1,6 @@
 package sortedfile
 
 import (
-	"path"
-	"strconv"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -89,66 +87,83 @@ func Test_newSparseIndexFromFile_ReadsEmptyKey(t *testing.T) {
 	}
 }
 
-func Test_nextFileNameForDir_Returns0ForEmptyDir(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	s, err := NewSortedFileKvStorage(fs)
-	if err != nil {
-		t.Fatalf("Unexpected error initialising storage: %v", err)
-	}
+func Test_getInterval_EmptySlice(t *testing.T) {
+	data := []KeyOffset{}
 
-	result, err := s.nextFileName()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+	var l, r *KeyOffset
 
-	expected := "0"
-	if path.Base(result) != expected {
-		t.Fatalf("Expected filename '%s', got '%s'", expected, result)
+	l, r = getInterval(data, "b")
+	if l != nil || r != nil {
+		t.Fail()
 	}
 }
 
-func Test_nextFileNameForDir_ReturnsCorrectNextFile(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	fs.Create("0")
-	fs.Create("1")
-	fs.Create("3") // gaps should be skipped
-	s, err := NewSortedFileKvStorage(fs)
-	if err != nil {
-		t.Fatalf("Unexpected error initialising storage: %v", err)
+func Test_getInterval_LengthOne(t *testing.T) {
+	data := []KeyOffset{
+		{Key: "f"},
 	}
 
-	result, err := s.nextFileName()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+	var l, r *KeyOffset
+
+	l, r = getInterval(data, "b")
+	if l != nil || r != &data[0] {
+		t.Fail()
 	}
 
-	expected := "4"
-	if path.Base(result) != expected {
-		t.Fatalf("Expected filename '%s', got '%s'", expected, result)
+	l, r = getInterval(data, "g")
+	if l != &data[0] || r != nil {
+		t.Fail()
+	}
+
+	l, r = getInterval(data, "f")
+	if l != &data[0] || r != nil {
+		t.Fail()
 	}
 }
 
-func Test_SortedFileKvStorage_CorrectlyWritesSortedFile(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	storage, err := NewSortedFileKvStorage(fs)
-	if err != nil {
-		t.Fatalf("Failed to init storage: %v", err)
+func Test_getInterval(t *testing.T) {
+	data := []KeyOffset{
+		{Key: "b"},
+		{Key: "e"},
+		{Key: "f"},
+		{Key: "k"},
+		{Key: "s"},
 	}
 
-	for i := 0; i < 150; i++ {
-		err = storage.Set(strconv.Itoa(i), strconv.Itoa(i*2))
-		if err != nil {
-			t.Fatalf("Failed to set %dth record: %v", i, err)
-		}
+	var l, r *KeyOffset
+
+	l, r = getInterval(data, "a")
+	if l != nil || r != &data[0] {
+		t.Fail()
 	}
 
-	result, exists, err := storage.Get("33")
-	if err != nil || !exists || result != "66" {
-		t.Fatalf("Failed to get record '33': %v", err)
+	l, r = getInterval(data, "b")
+	if l != &data[0] || r != &data[1] {
+		t.Fail()
 	}
 
-	exists, _ = afero.Exists(fs, "0")
-	if !exists {
-		t.Fatalf("Expected a file with name '0' to be written")
+	l, r = getInterval(data, "c")
+	if l != &data[0] || r != &data[1] {
+		t.Fail()
+	}
+
+	l, r = getInterval(data, "e")
+	if l != &data[1] || r != &data[2] {
+		t.Fail()
+	}
+
+	l, r = getInterval(data, "f")
+	if l != &data[2] || r != &data[3] {
+		t.Fail()
+	}
+
+	l, r = getInterval(data, "m")
+	if l != &data[3] || r != &data[4] {
+		t.Fail()
+	}
+
+	l, r = getInterval(data, "z")
+	if l != &data[4] || r != nil {
+		t.Fail()
 	}
 }
